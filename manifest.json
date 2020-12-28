@@ -1,0 +1,49 @@
+{
+  "manifest_version": 2,
+  "name": "papi-generator-extension",
+  "version": "1.0.0",
+  "description": "papi接口代码生成插件",
+  "icons": {
+    "16": "img/icon16.png",
+    "48": "img/icon48.png",
+    "128": "img/icon128.png"
+  },
+  "background": {
+    "page": "html/background.html"
+  },
+  "browser_action": {
+    "default_icon": "img/icon16.png",
+    "default_title": "弹出选择模板页面",
+    "default_popup": "html/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "external/jquery-1.11.0.min.js",
+        "js/content-script.js"
+      ],
+      "css": [
+        "css/custom.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": [
+    "contextMenus",
+    "tabs",
+    "notifications",
+    "webRequest",
+    "webRequestBlocking",
+    "storage",
+    "http://192.168.0.15:40001/**"
+  ],
+  "web_accessible_resources": [
+    "js/inject.js",
+    "external/*"
+  ],
+  "homepage_url": "https://github.com/lzeqian?tab=repositories",
+  "default_locale": "zh_CN"
+}
