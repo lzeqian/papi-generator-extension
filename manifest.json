@@ -19,7 +19,10 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "http://192.168.0.15:40001/*",
+        "http://localhost:8808/*",
+        "http://192.168.1.35:8808/*"
+
       ],
       "js": [
         "external/jquery-1.11.0.min.js",
@@ -38,10 +41,13 @@
     "webRequest",
     "webRequestBlocking",
     "storage",
-    "http://192.168.0.15:40001/**"
+    "clipboardWrite",
+    "clipboardRead",
+    "http://192.168.0.15:40001/*"
   ],
   "web_accessible_resources": [
     "js/inject.js",
+    "js/common.js",
     "external/*"
   ],
   "homepage_url": "https://github.com/lzeqian?tab=repositories",

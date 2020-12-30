@@ -1,4 +1,3 @@
-var ciServer="http://localhost:8888/"
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse)
 {
     if(request.requestType=="getAllTemplate"){
@@ -9,6 +8,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse)
             dataType:'json',
             success:function(res){
                 sendResponse(JSON.stringify(res))
+            },
+            error:function(jqXHR, textStatus, errorThrown){
+                alert("无法连接模板服务器"+errorThrown)
             }
         })
     }

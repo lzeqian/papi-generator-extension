@@ -1,5 +1,4 @@
 var templateResponse = null
-var ciServer="http://localhost:8888/"
 /**
  * 点击生成按钮弹出对话框让用户输入包名和选择
  * genType=0表示生成单个接口
@@ -48,7 +47,7 @@ function getInterFaceInfo(interfaceId,projectId,ifHaveDesc,callback){
 
                         for (catTmp of projectData.cat) {
                             if (catTmp._id == catid) {
-                                callback(interfaceData, catTmp.desc.trim().replaceAll(" ", ""),catTmp.name)
+                                callback(interfaceData, catTmp.desc.trim().replace(" ", ""),catTmp.name)
                                 break;
                             }
                         }
@@ -60,6 +59,21 @@ function getInterFaceInfo(interfaceId,projectId,ifHaveDesc,callback){
             }
         }
     })
+}
+/**
+ *  获取用户id
+ * */
+function getUserInfo(uid){
+    var userInfo=null;
+    $.ajax({
+        url: '/api/user/find?id='+uid,
+        async:false,
+        dataType:'json',
+        success:function(res){
+            userInfo=res.data;
+        }
+    })
+    return userInfo;
 }
 /**
  *  genType表示生成单个接口还是集合
@@ -79,6 +93,9 @@ function remoteGenerator(genType,appid,projectId){
             paramData["interfaceList"]=[interfaceData]
             paramData["catDescription"]=catDesc
             paramData["catName"]=catName
+            let userInfo=getUserInfo(interfaceData.uid)
+            paramData["userEmail"]=userInfo.email;
+            paramData["userName"]=userInfo.username;
             console.log(paramData)
             console.log(JSON.stringify(paramData))
             let apiRegex=/^\/.+\/api\/v[0-9]+\/.+$/
@@ -103,6 +120,9 @@ function remoteGenerator(genType,appid,projectId){
                         if(catDesc) {
                             paramData["catDescription"] = catDesc
                             paramData["catName"] = catName
+                            let userInfo=getUserInfo(interfaceData.uid)
+                            paramData["userEmail"]=userInfo.email;
+                            paramData["userName"]=userInfo.username;
                         }
                     });
                     ifHaveDesc=true;
@@ -132,5 +152,27 @@ function cacheTemplate(ptemplateList, styleId) {
     templateResponse = JSON.parse(decodeURIComponent(ptemplateList));
     $("#" + styleId).remove()
 }
-
+function packagePage(type){
+    let jsonSchema=null;
+    if(type==0){
+        jsonSchema='{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"pageIndex":{"type":"number","description":"当前页","title":"当前页"},"pagesCount":{"type":"number","title":"总页数","description":"总页数"},"pageSize":{"type":"number","title":"每页显示行数","description":"每页显示行数"},"recordsCount":{"type":"number","title":"总记录数","description":"总记录数"},"dataSource":{"type":"array","items":{"type":"object","properties":{},"required":[]}}},"required":["pageIndex","pagesCount","pageSize","recordsCount","dataSource"],"title":"分页数据","description":"分页数据"}'
+    }else{
+        jsonSchema='{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"total":{"type":"string","title":"总记录数","description":"总记录数"},"list":{"type":"array","items":{"type":"object","properties":{},"title":"分页数据","description":"分页数据"},"title":"当前页数据","description":"当前页数据"},"pageNum":{"type":"number","title":"每页显示行数","description":"每页显示行数"},"pageSize":{"type":"number","title":"总页数","description":"总页数"}},"description":"分页对象","title":"分页对象","required":["total","list","pageNum","pageSize"]}';
+    }
+    $("#yapi > div > div.router-main > div.router-container > div > div > div.ant-layout.ant-layout-has-sider > div.ant-layout > div > div > div > div.interface-edit > div > form > div:nth-child(8) > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(1) > div > button:nth-child(1)").click()
+    //选中JSONJSON-SCHEMA页签
+    $("div[role='document']").find("div[role='tab']").each(function (i, ele) {
+        if($(ele).text()=="JSON-SCHEMA"){
+            $(ele).click();
+        }
+    })
+    let currentTabPanel=$("div[role='document']").find("div[role='tabpanel']").filter(".ant-tabs-tabpane-active").find(".ace_editor")
+    let aceEditor=window.ace.edit(currentTabPanel[0])
+    aceEditor.setValue(jsonSchema);
+    $("div[role='document']").find("button[type='button']").each(function (i, ele) {
+        if($(ele).text()=="确 定"){
+            $(ele).click();
+        }
+    })
+}
 
