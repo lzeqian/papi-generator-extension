@@ -26,6 +26,7 @@
       ],
       "js": [
         "external/jquery-1.11.0.min.js",
+        "js/common.js",
         "js/content-script.js"
       ],
       "css": [

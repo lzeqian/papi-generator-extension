@@ -35,13 +35,21 @@ function generatorInterfaceCode(genType) {
     }, 100)
 
 }
+
+/**
+ * 获取接口数据
+ * @param interfaceId 接口id
+ * @param projectId  项目id
+ * @param ifHaveDesc 是否已经获取描述
+ * @param callback 获取成功后异步回调函数
+ */
 function getInterFaceInfo(interfaceId,projectId,ifHaveDesc,callback){
-    $.getJSON("/api/interface/get?id="+interfaceId,function(result){
+    $.getJSON(apiList["getInterface"]+"?id="+interfaceId,function(result){
         if(result.errcode==0) {
             var interfaceData=result.data;
             var catid=interfaceData["catid"];
             if(!ifHaveDesc) {
-                $.getJSON("/api/project/get?id=" + projectId, function (cresult) {
+                $.getJSON(apiList["getProject"]+"?id=" + projectId, function (cresult) {
                     if (cresult.errcode == 0) {
                         projectData = cresult.data;
 
@@ -66,7 +74,7 @@ function getInterFaceInfo(interfaceId,projectId,ifHaveDesc,callback){
 function getUserInfo(uid){
     var userInfo=null;
     $.ajax({
-        url: '/api/user/find?id='+uid,
+        url: apiList["getUser"]+'?id='+uid,
         async:false,
         dataType:'json',
         success:function(res){
@@ -76,6 +84,7 @@ function getUserInfo(uid){
     return userInfo;
 }
 /**
+ *  调用远程服务生成代码
  *  genType表示生成单个接口还是集合
  * */
 function remoteGenerator(genType,appid,projectId){
@@ -104,13 +113,17 @@ function remoteGenerator(genType,appid,projectId){
                 return;
             }
             let inputs="<input name='jsonData' value='"+encodeURIComponent(JSON.stringify(paramData))+"'>"
-            $('<form action="' + ciServer + 'template/gen" method="post">' + inputs + '</form>').appendTo('body').submit().remove();
+            $('<form action="' + templateServer + 'template/gen" method="post">' + inputs + '</form>').appendTo('body').submit().remove();
         })
     }else{
         //分类的id举例：cat_1891
         let catid=appid.split("_")[1];
+        if(!catid){
+            alert("请选择一个分类，请勿选择全部接口")
+            return;
+        }
         //列表分类下所有接口
-        $.getJSON("/api/interface/list_cat?page=1&limit=200&catid="+catid,function(result) {
+        $.getJSON(apiList["getInterfaceAtCat"]+"?page=1&limit=200&catid="+catid,function(result) {
             if (result.errcode == 0) {
                 var ifHaveDesc=false
                 for(let re of result.data.list){
@@ -140,7 +153,7 @@ function remoteGenerator(genType,appid,projectId){
                             }
                         }
                         let inputs="<input name='jsonData' value='"+encodeURIComponent(JSON.stringify(paramData))+"'>"
-                        $('<form action="' + ciServer + 'template/gen" method="post">' + inputs + '</form>').appendTo('body').submit().remove();
+                        $('<form action="' + templateServer + 'template/gen" method="post">' + inputs + '</form>').appendTo('body').submit().remove();
                     }
                 },10)
 
@@ -148,16 +161,27 @@ function remoteGenerator(genType,appid,projectId){
         });
     }
 }
+
+/**
+ * 用于接收模板列表的content-scripts回应
+ * @param ptemplateList 模板列表字符串
+ * @param styleId 共享dom元素id，用完自动删除
+ */
 function cacheTemplate(ptemplateList, styleId) {
     templateResponse = JSON.parse(decodeURIComponent(ptemplateList));
     $("#" + styleId).remove()
 }
+
+/**
+ * 包装分页到响应结果中
+ * @param type
+ */
 function packagePage(type){
     let jsonSchema=null;
     if(type==0){
-        jsonSchema='{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"pageIndex":{"type":"number","description":"当前页","title":"当前页"},"pagesCount":{"type":"number","title":"总页数","description":"总页数"},"pageSize":{"type":"number","title":"每页显示行数","description":"每页显示行数"},"recordsCount":{"type":"number","title":"总记录数","description":"总记录数"},"dataSource":{"type":"array","items":{"type":"object","properties":{},"required":[]}}},"required":["pageIndex","pagesCount","pageSize","recordsCount","dataSource"],"title":"分页数据","description":"分页数据"}'
+        jsonSchema=dotnetJsonSchema;
     }else{
-        jsonSchema='{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"total":{"type":"string","title":"总记录数","description":"总记录数"},"list":{"type":"array","items":{"type":"object","properties":{},"title":"分页数据","description":"分页数据"},"title":"当前页数据","description":"当前页数据"},"pageNum":{"type":"number","title":"每页显示行数","description":"每页显示行数"},"pageSize":{"type":"number","title":"总页数","description":"总页数"}},"description":"分页对象","title":"分页对象","required":["total","list","pageNum","pageSize"]}';
+        jsonSchema=javaJsonSchema;
     }
     $("#yapi > div > div.router-main > div.router-container > div > div > div.ant-layout.ant-layout-has-sider > div.ant-layout > div > div > div > div.interface-edit > div > form > div:nth-child(8) > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(1) > div > button:nth-child(1)").click()
     //选中JSONJSON-SCHEMA页签
@@ -176,3 +200,29 @@ function packagePage(type){
     })
 }
 
+/**
+ * 将所有的项目mock修改为带有code统一规范。
+ */
+function mockDefaultSpec(){
+    let groupId = window.location.href.substring(window.location.href.lastIndexOf("/") + 1)
+    $.getJSON(apiList["listProjectAtGroup"]+"?group_id="+groupId+"&page=1&limit=1000", function (cresult) {
+        for(let project of cresult.data.list){
+            let projectId=project["_id"]
+            $.ajax({
+                url: apiList["updateProject"],
+                type:"post",
+                contentType: "application/json;charset=UTF-8",
+                data:JSON.stringify({
+                    id: projectId,
+                    is_mock_open: true,
+                    project_mock_script: projectMockScript
+                }),
+                dataType:'json',
+                success:function(res){
+
+                }
+            })
+        }
+        alert("mock成功,可进入项目->设置->全局mock脚本查看，或者点击某个get请求的mockurl进去查看响应结果");
+    });
+}

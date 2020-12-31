@@ -3,7 +3,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse)
     if(request.requestType=="getAllTemplate"){
         $.ajax({
             type:'get',
-            url:ciServer+"template/list",
+            url:templateServer+"template/list",
             async:false,
             dataType:'json',
             success:function(res){
